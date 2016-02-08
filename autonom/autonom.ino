@@ -1,11 +1,11 @@
 #define BT_STATE A1
-#define PWM_A 3  //PWM control for motor outputs 1 and 2 
-#define PWM_B 9  //PWM control for motor outputs 3 and 4 
-#define DIR_A 2  //direction control for motor outputs 1 and 2 
-#define DIR_B 8  //direction control for motor outputs 3 and 4 
-#define RECHTS LOW
+#define PWM_A 3  // PWM control for motor outputs 1 and 2 
+#define PWM_B 9  // PWM control for motor outputs 3 and 4 
+#define DIR_A 2  // direction control for motor outputs 1 and 2 
+#define DIR_B 8  // direction control for motor outputs 3 and 4 
 
-#define HC04_POWER A0
+#define LEFT 255   // rotate steering motor left
+#define RIGHT -255 // rotate steering motor right
 
 // left sensor
 #define HC04_LE_TRIGGER A10
@@ -66,31 +66,29 @@ long microsecondsToCentimeters(long microseconds)
  
 void setup()
 {
-  pinMode(PWM_A, OUTPUT);  //Set control pins to be outputs
+  // configure motor control pins  
+  pinMode(PWM_A, OUTPUT);
   pinMode(PWM_B, OUTPUT);
   pinMode(DIR_A, OUTPUT);
   pinMode(DIR_B, OUTPUT);
 
-  // HC04 power on
-  pinMode(HC04_POWER, OUTPUT);
-  digitalWrite(HC04_POWER, HIGH);
-  
-  // setup left sensor
-  pinMode(HC04_LE_TRIGGER, OUTPUT);
-  pinMode(HC04_LE_ECHO, INPUT);
-  
-  // setup center sensor
-  pinMode(HC04_CE_TRIGGER, OUTPUT);
-  pinMode(HC04_CE_ECHO, INPUT);
-
-  // setup right sensor
-  pinMode(HC04_RI_TRIGGER, OUTPUT);
-  pinMode(HC04_RI_ECHO, INPUT);
-
+  // bring motor control in a safe (stop) state
   analogWrite(PWM_A, 0);
   analogWrite(PWM_B, 0);
   digitalWrite(DIR_A, LOW); 
   digitalWrite(DIR_B, LOW);  
+
+  // setup left ultrasonic sensor
+  pinMode(HC04_LE_TRIGGER, OUTPUT);
+  pinMode(HC04_LE_ECHO, INPUT);
+  
+  // setup center ultrasonic sensor
+  pinMode(HC04_CE_TRIGGER, OUTPUT);
+  pinMode(HC04_CE_ECHO, INPUT);
+
+  // setup right ultrasonic sensor
+  pinMode(HC04_RI_TRIGGER, OUTPUT);
+  pinMode(HC04_RI_ECHO, INPUT);
 
   // default baud rate BT interface
   Serial1.begin(9600);
@@ -99,25 +97,33 @@ void setup()
   }
 }
 
+// enum for driving states
+typedef enum state
+{
+  stopped,
+  forward_driving,
+  reverse_driving,
+  rotate_right,
+  rotate_left
+} state_t;
+
+
+// global variables
 int speed = 0;
 int direction = 0;
-int moreRotation = 0;
-bool rotating = false;
 bool autonomous = false; 
 String str;
+state_t driving_state = stopped;
 
 void loop()
 {   
    char zeichen;
-   //bool paramsChanged = false; // if speed/direction changed
    
    int distanceLeft   = measureDistance(HC04_LE_TRIGGER, HC04_LE_ECHO);
    int distanceRight  = measureDistance(HC04_RI_TRIGGER, HC04_RI_ECHO);
    int distanceCenter = measureDistance(HC04_CE_TRIGGER, HC04_CE_ECHO);
 
-   int mediumDistance = (distanceLeft + distanceRight + distanceCenter) / 3;
-   int obstacleDirection = distanceRight - distanceLeft;
-
+   //int mediumDistance = (distanceLeft + distanceRight + distanceCenter) / 3;
    
    Serial1.print("L / R / C / M: \t");
    Serial1.print(distanceLeft);
@@ -125,79 +131,80 @@ void loop()
    Serial1.print(distanceRight);
    Serial1.print("\t");
    Serial1.print(distanceCenter);
-   Serial1.print("\t");
-   Serial1.print(mediumDistance);
+   //Serial1.print("\t");
+   //Serial1.print(mediumDistance);
    Serial1.print("\r\n");
 
    if(autonomous)
    {
-      if (obstacleDirection < 0)
-      {
-        direction = -255;
-      }
-      else if (obstacleDirection > 0)
-      {
-        direction = 255;
-      }
-      else
-      {
-        direction = 0;
-      }
+     switch (driving_state)
+     {
+       case stopped:
+         speed = 0;
+         direction = 0;
+         driving_state = forward_driving;
+       break;
 
-      if ((distanceLeft < STOP_DISTANCE) || (distanceRight < STOP_DISTANCE) || (distanceCenter < STOP_DISTANCE))
-      {
-        speed = 0;
-      }
-      else
-      {
-        if (mediumDistance < (2 * STOP_DISTANCE))
+       case forward_driving:
+        // full speed forward
+        speed = 255;
+        direction = 0;
+
+        // check for obstacles
+        if ((distanceLeft < STOP_DISTANCE) || (distanceRight < STOP_DISTANCE) || (distanceCenter < STOP_DISTANCE))
         {
-          speed = 155;
+          if (distanceLeft <= distanceRight)
+          {
+            // obstacle in the left --> turn right
+            driving_state = rotate_right;
+          }
+          else
+          {
+            // obstacle in the right --> turn left
+            driving_state = rotate_right;
+          }
         }
-        else
-        {
-          speed = 255;
-        }
-      }
+       break;
+
+       case rotate_right:
+         speed = 0;
+         direction = RIGHT;
+         if (distanceLeft > STOP_DISTANCE)
+         {
+           // turned away from the obstacle --> forward
+           driving_state = forward_driving;
+         }
+       
+       break;
+
+       case rotate_left:
+         speed = 0;
+         direction = LEFT;
+         if (distanceRight > STOP_DISTANCE)
+         {
+           // turned away from the obstacle --> forward
+           driving_state = forward_driving;
+         }
+       break;
+
+       // no reverse driving at the moment
+       case reverse_driving:
+       // no break
+       default:
+       // this should never happen! stop the machine! leave auto mode!
+       speed = 0;
+       direction = 0;
+       driving_state = stopped;
+       autonomous = false;
+       break;
+     }     
    }
- #if 0
-   if(autonomous)
+   else
    {
-      bool previouslyRotating = rotating;
-      if((distance > 20) || (distance == 0))
-      {
-        Serial1.print("auto: forward\r\n");
-        if(moreRotation>0)
-        {
-          moreRotation--;
-          rotating = true;
-        } else
-        {
-          rotating = false;
-        }
-      } else
-      {
-        Serial1.print("auto: rotate\r\n");
-        rotating = true;
-        moreRotation = 8;
-      }
-      if(rotating != previouslyRotating)
-      {
-        if(!rotating)
-        {
-          speed = 160;
-          direction = 0;
-        } else
-        {
-          speed = 0;
-          direction = 255;
-        }
-        paramsChanged = true;
-      }
+     driving_state = stopped;
    }
-#endif
    
-   // Eingabezeichen vorhanden
+   // serial character available
    if (Serial1.available() > 0) {
     zeichen = Serial1.read();
     
@@ -297,34 +304,31 @@ void loop()
     Serial1.print("direction: ");
     Serial1.print(direction);
     Serial1.print("\r\n");
-
-    //paramsChanged = true;
   }
 
-  //if(paramsChanged)
+  // set the new speed and direction parameters
+  // this is done on every loop run
+  if (speed >= 0)
   {
-    if (speed >= 0)
-    {
-      digitalWrite(DIR_A, LOW);
-    } 
-    else
-    {
-      digitalWrite(DIR_A, HIGH);
-    }
-    analogWrite(PWM_A, abs(speed));
-
-    if (direction >= 0)
-    {
-      digitalWrite(DIR_B, LOW);
-    } 
-    else
-    {
-      digitalWrite(DIR_B, HIGH);
-    }
-    analogWrite(PWM_B, abs(direction));
+    digitalWrite(DIR_A, LOW);
+  } 
+  else
+  {
+    digitalWrite(DIR_A, HIGH);
   }
+  analogWrite(PWM_A, abs(speed));
 
-  // limit the measurement rate to not "overload" the sensors
+  if (direction >= 0)
+  {
+    digitalWrite(DIR_B, LOW);
+  } 
+  else
+  {
+    digitalWrite(DIR_B, HIGH);
+  }
+  analogWrite(PWM_B, abs(direction));
+
+  // limit the loop rate to not "overload" the sensors
   delay(60);     
 }
 
