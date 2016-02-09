@@ -16,8 +16,8 @@
 #define HC04_CE_ECHO A9
 
 // right sensor
-#define HC04_RI_TRIGGER A2
-#define HC04_RI_ECHO A3
+#define HC04_RI_TRIGGER A12
+#define HC04_RI_ECHO A13
 
 #define STOP_DISTANCE 40
 
@@ -161,7 +161,7 @@ void loop()
           else
           {
             // obstacle in the right --> turn left
-            driving_state = rotate_right;
+            driving_state = rotate_left;
           }
         }
        break;
