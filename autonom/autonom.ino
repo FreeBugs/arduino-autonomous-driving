@@ -4,9 +4,9 @@
 #define DIR_A 2  // direction control for motor outputs 1 and 2 
 #define DIR_B 8  // direction control for motor outputs 3 and 4 
 
-#define LEFT 255   // rotate steering motor left
-#define RIGHT -255 // rotate steering motor right
-
+#define LEFT 128   // rotate steering motor left
+#define RIGHT -128 // rotate steering motor right
+#define MEASURE_LOOP_COUNT 8
 // left sensor
 #define HC04_LE_TRIGGER A10
 #define HC04_LE_ECHO A11
@@ -16,10 +16,11 @@
 #define HC04_CE_ECHO A9
 
 // right sensor
-#define HC04_RI_TRIGGER A12
-#define HC04_RI_ECHO A13
+#define HC04_RI_TRIGGER A2
+#define HC04_RI_ECHO A3
 
-#define STOP_DISTANCE 40
+#define LIM_DISTANCE_HI 100
+#define LIM_DISTANCE_LO 40
 
 int measureDistance(uint8_t triggerPort, uint8_t echoPort )
 {
@@ -30,7 +31,7 @@ int measureDistance(uint8_t triggerPort, uint8_t echoPort )
   // The same pin is used to read the signal from the PING))): a HIGH
   // pulse whose duration is the time (in microseconds) from the sending
   // of the ping to the reception of its echo off of an object.
-  int duration = pulseIn(echoPort, HIGH, 10000);
+  int duration = pulseIn(echoPort, HIGH, 3000);
   
   // convert the time into a distance
   //inches = microsecondsToInches(duration);
@@ -38,12 +39,12 @@ int measureDistance(uint8_t triggerPort, uint8_t echoPort )
   //Serial1.println(cm, DEC);
   if (0 == cm)
   {
-    cm = 1000;
+    cm = LIM_DISTANCE_HI;
   }
   return cm;
 }
 
-long microsecondsToInches(long microseconds)
+int microsecondsToInches(int microseconds)
 {
   // According to Parallax's datasheet for the PING))), there are
   // 73.746 microseconds per inch (i.e. sound travels at 1130 feet per
@@ -54,7 +55,7 @@ long microsecondsToInches(long microseconds)
 
 }
 
-long microsecondsToCentimeters(long microseconds)
+int microsecondsToCentimeters(int microseconds)
 {
   // The speed of sound is 340 m/s or 29 microseconds per centimeter.
   // The ping travels out and back, so to find the distance of the
@@ -114,94 +115,71 @@ int direction = 0;
 bool autonomous = false; 
 String str;
 state_t driving_state = stopped;
+int counter = 0;
+
 
 void loop()
 {   
    char zeichen;
    
-   int distanceLeft   = measureDistance(HC04_LE_TRIGGER, HC04_LE_ECHO);
-   int distanceRight  = measureDistance(HC04_RI_TRIGGER, HC04_RI_ECHO);
-   int distanceCenter = measureDistance(HC04_CE_TRIGGER, HC04_CE_ECHO);
+   static int distanceLeft = 0;
+   static int distanceRight = 0;
+   static int distanceCenter = 0;
 
-   //int mediumDistance = (distanceLeft + distanceRight + distanceCenter) / 3;
-   
-   Serial1.print("L / R / C / M: \t");
-   Serial1.print(distanceLeft);
-   Serial1.print("\t");
-   Serial1.print(distanceRight);
-   Serial1.print("\t");
-   Serial1.print(distanceCenter);
-   //Serial1.print("\t");
-   //Serial1.print(mediumDistance);
-   Serial1.print("\r\n");
+   distanceLeft   += measureDistance(HC04_LE_TRIGGER, HC04_LE_ECHO);
+   distanceRight  += measureDistance(HC04_RI_TRIGGER, HC04_RI_ECHO);
+   distanceCenter += measureDistance(HC04_CE_TRIGGER, HC04_CE_ECHO);
 
-   if(autonomous)
+   if(0 == (++counter % MEASURE_LOOP_COUNT))
    {
-     switch (driving_state)
+     counter = 0;
+     
+     distanceLeft = distanceLeft / MEASURE_LOOP_COUNT;
+     distanceRight = distanceRight / MEASURE_LOOP_COUNT;
+     distanceCenter = distanceCenter / MEASURE_LOOP_COUNT;
+
+     Serial1.print("L / C / R / spd / dir: \t");
+     Serial1.print(distanceLeft);
+     Serial1.print("\t");
+     Serial1.print(distanceCenter);
+     Serial1.print("\t");
+     Serial1.print(distanceRight);
+     Serial1.print("\t");
+     Serial1.print(speed);
+     Serial1.print("\t");
+     Serial1.print(direction);
+     Serial1.print("\r\n");
+
+     if(autonomous)
      {
-       case stopped:
-         speed = 0;
-         direction = 0;
-         driving_state = forward_driving;
-       break;
-
-       case forward_driving:
-        // full speed forward
-        speed = 255;
-        direction = 0;
-
-        // check for obstacles
-        if ((distanceLeft < STOP_DISTANCE) || (distanceRight < STOP_DISTANCE) || (distanceCenter < STOP_DISTANCE))
-        {
-          if (distanceLeft <= distanceRight)
-          {
-            // obstacle in the left --> turn right
-            driving_state = rotate_right;
-          }
-          else
-          {
-            // obstacle in the right --> turn left
-            driving_state = rotate_left;
-          }
-        }
-       break;
-
-       case rotate_right:
-         speed = 0;
-         direction = RIGHT;
-         if (distanceLeft > STOP_DISTANCE)
-         {
-           // turned away from the obstacle --> forward
-           driving_state = forward_driving;
-         }
-       
-       break;
-
-       case rotate_left:
-         speed = 0;
-         direction = LEFT;
-         if (distanceRight > STOP_DISTANCE)
-         {
-           // turned away from the obstacle --> forward
-           driving_state = forward_driving;
-         }
-       break;
-
-       // no reverse driving at the moment
-       case reverse_driving:
-       // no break
-       default:
-       // this should never happen! stop the machine! leave auto mode!
-       speed = 0;
-       direction = 0;
+       // find the minimum distance for all three sensors
+       int dmin = min(distanceLeft,min(distanceRight,distanceCenter));
+  
+       // the closer the minimum distance is, the slower we drive
+       int vFwd = 255 - ((LIM_DISTANCE_HI - dmin) * 2);
+  
+       // the close we are to an obstacle, the faster we rotate
+       int vRot = 255 - vFwd;
+       if (vRot)
+       {
+         vRot = max(vRot, 128);
+       }
+  
+       // find the rotation direction
+       int dir  = distanceLeft - distanceRight;
+       if (dir<0) dir = -1; else dir = 1;
+       speed = vFwd;
+       direction = vRot * dir;
+     }
+     else
+     {
        driving_state = stopped;
-       autonomous = false;
-       break;
-     }     
-   }
-   else
-   {
-     driving_state = stopped;
+     }
+
+     // reset value for next measurement cycle
+     distanceLeft = 0;
+     distanceRight = 0;
+     distanceCenter = 0;
    }
    
    // serial character available
