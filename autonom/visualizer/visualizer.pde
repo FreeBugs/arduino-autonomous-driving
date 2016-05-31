@@ -46,7 +46,9 @@ void draw () {
 drawDistances(distLeft, distCenter, distRight);
 }
 
-void drawDistances(float l, float c, float r)
+
+
+void drawDistances(float l, float m, float r)
 {
 
   pushStyle();
@@ -54,19 +56,24 @@ void drawDistances(float l, float c, float r)
   
 
   
-  translate(100,100);
+  translate(100,300);
+  
+  rotate(PI);
+  
+  fill(0);
+  
+  rect (0, 10, 100, 300);
   
   strokeWeight(2);
   fill(#FF0000);
-  rect (100, 10, 20, l);
+  rect (60, 10, 20, l);
   fill(#007F00);
-  rect (130, 10, 20, c);
+  rect (30, 10, 20, m);
   fill(#00007F);
-  rect (160, 10, 20, r);
+  rect (0, 10, 20, r);
   popMatrix();
   popStyle();
 }
-
 
 void serialEvent (Serial myPort) {
   // get the ASCII string:
