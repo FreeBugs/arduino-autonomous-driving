@@ -41,7 +41,7 @@ int measureDistance(uint8_t triggerPort, uint8_t echoPort )
   {
     cm = LIM_DISTANCE_HI;
   }
-  return cm;
+  return min(cm, LIM_DISTANCE_HI);
 }
 
 int microsecondsToInches(int microseconds)
