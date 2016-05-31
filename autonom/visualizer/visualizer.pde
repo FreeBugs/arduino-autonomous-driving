@@ -40,10 +40,31 @@ void setup () {
   // set inital background:
   background(0);
 }
+
+
 void draw () {
-  // draw the line left:
-  stroke(colLeft);
-  rect(10, 10, height - distLeft, 10);
+drawDistances(distLeft, distCenter, distRight);
+}
+
+void drawDistances(float l, float c, float r)
+{
+
+  pushStyle();
+  pushMatrix();
+  
+
+  
+  translate(100,100);
+  
+  strokeWeight(2);
+  fill(#FF0000);
+  rect (100, 10, 20, l);
+  fill(#007F00);
+  rect (130, 10, 20, c);
+  fill(#00007F);
+  rect (160, 10, 20, r);
+  popMatrix();
+  popStyle();
 }
 
 
