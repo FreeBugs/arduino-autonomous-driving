@@ -31,7 +31,7 @@ int measureDistance(uint8_t triggerPort, uint8_t echoPort )
   // The same pin is used to read the signal from the PING))): a HIGH
   // pulse whose duration is the time (in microseconds) from the sending
   // of the ping to the reception of its echo off of an object.
-  int duration = pulseIn(echoPort, HIGH, 3000);
+  int duration = pulseIn(echoPort, HIGH, 10000);
   
   // convert the time into a distance
   //inches = microsecondsToInches(duration);
@@ -138,17 +138,25 @@ void loop()
      distanceRight = distanceRight / MEASURE_LOOP_COUNT;
      distanceCenter = distanceCenter / MEASURE_LOOP_COUNT;
 
-     Serial1.print("L / C / R / spd / dir: \t");
+     //Serial1.print("L / C / R / spd / dir: \t");
+     Serial1.print("L ");
      Serial1.print(distanceLeft);
-     Serial1.print("\t");
-     Serial1.print(distanceCenter);
-     Serial1.print("\t");
+     Serial1.print("\n\r");
+     Serial1.print("R ");
      Serial1.print(distanceRight);
-     Serial1.print("\t");
-     Serial1.print(speed);
-     Serial1.print("\t");
-     Serial1.print(direction);
-     Serial1.print("\r\n");
+     Serial1.print("\n\r");
+     Serial1.print("C ");
+     Serial1.print(distanceCenter);
+     Serial1.print("\n\r");
+     //Serial1.print("\t");
+     //Serial1.println("distanceCenter);
+     //Serial1.print("\t");
+     //Serial1.println("distanceRight);
+     //Serial1.print("\t");
+     //Serial1.print(speed);
+     //Serial1.print("\t");
+     //Serial1.print(direction);
+     //Serial1.print("\r\n");
 
      if(autonomous)
      {
@@ -218,13 +226,13 @@ void loop()
       autonomous = !autonomous;
       if(autonomous)
       {
-        Serial1.print("auto ON\r\n");
+        //Serial1.print("auto ON\r\n");
         direction = 0;
         speed = 160;
       }        
       else
       {
-        Serial1.print("auto OFF\r\n");
+        //Serial1.print("auto OFF\r\n");
         direction = 0;
         speed = 0;
       }
@@ -275,13 +283,13 @@ void loop()
       direction = -255;
     }
     
-    Serial1.print("Speed: ");
-    Serial1.print(speed);
-    Serial1.print("\r\n");
+    //Serial1.print("Speed: ");
+    //Serial1.print(speed);
+    //Serial1.print("\r\n");
 
-    Serial1.print("direction: ");
-    Serial1.print(direction);
-    Serial1.print("\r\n");
+    //Serial1.print("direction: ");
+    //Serial1.print(direction);
+    //Serial1.print("\r\n");
   }
 
   // set the new speed and direction parameters
