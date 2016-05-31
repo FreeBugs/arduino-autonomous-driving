@@ -48,29 +48,27 @@ drawDistances(distLeft, distCenter, distRight);
 
 
 
-void drawDistances(float l, float m, float r)
+void drawDistances(float l, float c, float r )
 {
 
   pushStyle();
   pushMatrix();
-  
-
-  
-  translate(100,300);
-  
+   
+  translate(200,300);
   rotate(PI);
   
   fill(0);
-  
-  rect (0, 10, 100, 300);
+  rect (0, 10, 200, 300);
   
   strokeWeight(2);
-  fill(#FF0000);
-  rect (60, 10, 20, l);
-  fill(#007F00);
-  rect (30, 10, 20, m);
-  fill(#00007F);
-  rect (0, 10, 20, r);
+  
+  fill(colRight);
+  rect (0, 10, 50, r);
+  
+  fill(colCenter);
+  rect (60, 10, 50, c);
+  fill(colLeft);
+  rect (120, 10, 50, l);
   popMatrix();
   popStyle();
 }
