@@ -1,14 +1,17 @@
 import controlP5.*;
 ControlP5 cp5;
-Knob speed;
+Knob directionWidget;
 import processing.serial.*;
 
 Serial myPort;        // The serial port
 float distLeft = 0.0;
 float distRight = 0.0;
 float distCenter = 0.0;
+float speed =0.0;
+float direction =0.0;
 
-  int widgetSize = 300;
+
+int widgetSize = 300;
 
 void setup()
 {
@@ -29,12 +32,12 @@ void setup()
   // don't generate a serialEvent() unless you get a newline character:
   myPort.bufferUntil('\n');
 
-  speed = cp5.addKnob("Speed")
+  directionWidget = cp5.addKnob("Direction")
     .setPosition(450, 300)
     .setRadius(50)
     .setScrollSensitivity(0.001)
-    .setMin(-100)
-    .setMax(100)
+    .setMin(-255)
+    .setMax(255)
     .setViewStyle(Controller.LINE )
     .showTickMarks()
     ;
@@ -43,11 +46,11 @@ void setup()
 void draw()
 {
 
-  float  currSpeed = 100-random(200);
-  if (currSpeed > 0) speed.setColorForeground(color(255, 255, 0)); 
-  else speed.setColorForeground(color(255, 0, 0));
-  
-  speed.setValue(currSpeed);
+
+  if (direction > 0) directionWidget.setColorForeground(color(255, 255, 0)); 
+  else directionWidget.setColorForeground(color(255, 0, 0));
+
+  directionWidget.setValue(direction);
 
   //drawDistances (random(300), random(300), random(300));
   drawDistances (distLeft, distCenter, distRight);
@@ -58,9 +61,9 @@ void draw()
 void drawDistances(float left, float center, float right)
 {
   fill(0);
-  
-  rect(100,100,100+widgetSize,widgetSize);
-  
+
+  rect(100, 100, 100+widgetSize, widgetSize);
+
   plotRadar(100, 100, left, -10);
 
   plotRadar(110, 100, center, 0);
@@ -74,14 +77,14 @@ void plotRadar(int topx, int topy, float radarDistance_cm, float angle_deg)
 
   PImage img = loadImage("HC-SR04-radiation-plot.JPG");
 
- // image(img, topx, topy, widgetSize, widgetSize);
+  // image(img, topx, topy, widgetSize, widgetSize);
 
   fill(#00FF00, 220);
 
   // precise measurement up to 8 feet = 243 cm
   // 1.05 * widgetSize is the 8 ' area
- // float radarDistance_pixels = map(min(243, radarDistance_cm), 0, 243, 0, 1.05*widgetSize); 
-   
+  // float radarDistance_pixels = map(min(243, radarDistance_cm), 0, 243, 0, 1.05*widgetSize); 
+
   float radarDistance_pixels = map(min(100, radarDistance_cm), 0, 100, 0, 1.05*widgetSize); 
   //println(radarDistance_pixels);
 
@@ -101,26 +104,36 @@ void serialEvent (Serial myPort) {
     // parse the input
     switch (list[0])
     {
-      case "L":
+    case "L":
       distLeft = float(list[1]);
       break;
-      
-      case "R":
+
+    case "R":
       distRight = float(list[1]);
       break;
-      
-      case "C":
+
+    case "C":
       distCenter = float(list[1]);
       break;
-      
-      default:
+
+    case "S":
+      speed = float(list[1]);
+      break;
+
+    case "D":
+      direction = float(list[1]);
+      break;
+
+    default:
       // just ignore it
       break;
     }
-    
-    println("left   ", distLeft);
-    println("right  ", distRight);
-    println("center ", distCenter);
+
+    print("L ", distLeft);
+    print("  C ", distCenter);
+    print("  R ", distRight);
+    print("  speed ", speed);
+    println("  direction ", direction);
 
     //inByte = map(inByte, 0, 100, 0, height);
   }

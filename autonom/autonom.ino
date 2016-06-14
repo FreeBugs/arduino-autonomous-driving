@@ -32,7 +32,7 @@ int measureDistance(uint8_t triggerPort, uint8_t echoPort )
   // pulse whose duration is the time (in microseconds) from the sending
   // of the ping to the reception of its echo off of an object.
   int duration = pulseIn(echoPort, HIGH, 10000);
-  
+
   // convert the time into a distance
   //inches = microsecondsToInches(duration);
   int cm = microsecondsToCentimeters(duration);
@@ -59,15 +59,15 @@ int microsecondsToCentimeters(int microseconds)
 {
   // The speed of sound is 340 m/s or 29 microseconds per centimeter.
   // The ping travels out and back, so to find the distance of the
-  // object we take half of the distance travelled. 
-  
+  // object we take half of the distance travelled.
+
   return microseconds / 29 / 2;
 
 }
- 
+
 void setup()
 {
-  // configure motor control pins  
+  // configure motor control pins
   pinMode(PWM_A, OUTPUT);
   pinMode(PWM_B, OUTPUT);
   pinMode(DIR_A, OUTPUT);
@@ -76,13 +76,13 @@ void setup()
   // bring motor control in a safe (stop) state
   analogWrite(PWM_A, 0);
   analogWrite(PWM_B, 0);
-  digitalWrite(DIR_A, LOW); 
-  digitalWrite(DIR_B, LOW);  
+  digitalWrite(DIR_A, LOW);
+  digitalWrite(DIR_B, LOW);
 
   // setup left ultrasonic sensor
   pinMode(HC04_LE_TRIGGER, OUTPUT);
   pinMode(HC04_LE_ECHO, INPUT);
-  
+
   // setup center ultrasonic sensor
   pinMode(HC04_CE_TRIGGER, OUTPUT);
   pinMode(HC04_CE_ECHO, INPUT);
@@ -112,131 +112,139 @@ typedef enum state
 // global variables
 int speed = 0;
 int direction = 0;
-bool autonomous = false; 
+bool autonomous = false;
 String str;
 state_t driving_state = stopped;
 int counter = 0;
 
 
 void loop()
-{   
-   char zeichen;
-   
-   static int distanceLeft = 0;
-   static int distanceRight = 0;
-   static int distanceCenter = 0;
+{
+  char zeichen;
 
-   distanceLeft   += measureDistance(HC04_LE_TRIGGER, HC04_LE_ECHO);
-   distanceRight  += measureDistance(HC04_RI_TRIGGER, HC04_RI_ECHO);
-   distanceCenter += measureDistance(HC04_CE_TRIGGER, HC04_CE_ECHO);
+  static int distanceLeft = 0;
+  static int distanceRight = 0;
+  static int distanceCenter = 0;
 
-   if(0 == (++counter % MEASURE_LOOP_COUNT))
-   {
-     counter = 0;
-     
-     distanceLeft = distanceLeft / MEASURE_LOOP_COUNT;
-     distanceRight = distanceRight / MEASURE_LOOP_COUNT;
-     distanceCenter = distanceCenter / MEASURE_LOOP_COUNT;
+  distanceLeft   += measureDistance(HC04_LE_TRIGGER, HC04_LE_ECHO);
+  distanceRight  += measureDistance(HC04_RI_TRIGGER, HC04_RI_ECHO);
+  distanceCenter += measureDistance(HC04_CE_TRIGGER, HC04_CE_ECHO);
 
-     //Serial1.print("L / C / R / spd / dir: \t");
-     Serial1.print("L ");
-     Serial1.print(distanceLeft);
-     Serial1.print("\n\r");
-     Serial1.print("R ");
-     Serial1.print(distanceRight);
-     Serial1.print("\n\r");
-     Serial1.print("C ");
-     Serial1.print(distanceCenter);
-     Serial1.print("\n\r");
-     //Serial1.print("\t");
-     //Serial1.println("distanceCenter);
-     //Serial1.print("\t");
-     //Serial1.println("distanceRight);
-     //Serial1.print("\t");
-     //Serial1.print(speed);
-     //Serial1.print("\t");
-     //Serial1.print(direction);
-     //Serial1.print("\r\n");
+  if (0 == (++counter % MEASURE_LOOP_COUNT))
+  {
+    counter = 0;
 
-     if(autonomous)
-     {
-       // find the minimum distance for all three sensors
-       int dmin = min(distanceLeft,min(distanceRight,distanceCenter));
-  
-       // the closer the minimum distance is, the slower we drive
-       int vFwd = 255 - ((LIM_DISTANCE_HI - dmin) * 2);
-  
-       // the close we are to an obstacle, the faster we rotate
-       int vRot = 255 - vFwd;
-       if (vRot)
-       {
-         vRot = max(vRot, 128);
-       }
-  
-       // find the rotation direction
-       int dir  = distanceLeft - distanceRight;
-       if (dir<0) dir = -1; else dir = 1;
-       speed = vFwd;
-       direction = vRot * dir;
-     }
-     else
-     {
-       driving_state = stopped;
-     }
+    distanceLeft = distanceLeft / MEASURE_LOOP_COUNT;
+    distanceRight = distanceRight / MEASURE_LOOP_COUNT;
+    distanceCenter = distanceCenter / MEASURE_LOOP_COUNT;
 
-     // reset value for next measurement cycle
-     distanceLeft = 0;
-     distanceRight = 0;
-     distanceCenter = 0;
-   }
-   
-   // serial character available
-   if (Serial1.available() > 0) {
+    //Serial1.print("L / C / R / spd / dir: \t");
+    Serial1.print("L ");
+    Serial1.print(distanceLeft);
+    Serial1.print("\n\r");
+    Serial1.print("R ");
+    Serial1.print(distanceRight);
+    Serial1.print("\n\r");
+    Serial1.print("C ");
+    Serial1.print(distanceCenter);
+    Serial1.print("\n\r");
+    //Serial1.print("\t");
+    //Serial1.println("distanceCenter);
+    //Serial1.print("\t");
+    //Serial1.println("distanceRight);
+    //Serial1.print("\t");
+    //Serial1.print(speed);
+    //Serial1.print("\t");
+    //Serial1.print(direction);
+    //Serial1.print("\r\n");
+
+    if (autonomous)
+    {
+      // find the minimum distance for all three sensors
+      int dmin = min(distanceLeft, min(distanceRight, distanceCenter));
+
+      // the closer the minimum distance is, the slower we drive
+      int vFwd = 255 - ((LIM_DISTANCE_HI - dmin) * 2);
+
+      // the close we are to an obstacle, the faster we rotate
+      int vRot = 255 - vFwd;
+      if (vRot)
+      {
+        vRot = max(vRot, 128);
+      }
+
+      // find the rotation direction
+      int dir  = distanceLeft - distanceRight;
+      if (dir < 0) dir = -1; else dir = 1;
+      speed = vFwd;
+      direction = vRot * dir;
+    }
+    else
+    {
+      driving_state = stopped;
+    };
+
+
+    Serial1.print("S ");
+    Serial1.print(speed);
+    Serial1.print("\n\r");
+    Serial1.print("D ");
+    Serial1.print(direction);
+    Serial1.print("\n\r");
+
+    // reset value for next measurement cycle
+    distanceLeft = 0;
+    distanceRight = 0;
+    distanceCenter = 0;
+  }
+
+  // serial character available
+  if (Serial1.available() > 0) {
     zeichen = Serial1.read();
-    
+
     switch (zeichen)
     {
       case 'w':
-      speed += 8;
-      break;
+        speed += 8;
+        break;
 
       case 's':
-      direction = 0;
-      break;
+        direction = 0;
+        break;
 
       case 'x':
-      speed -= 8;
-      break;
+        speed -= 8;
+        break;
 
       case 'a':
-      direction += 8;
-      break;
+        direction += 8;
+        break;
 
       case 'd':
-      direction -= 8;
-      break;
-      
-      case ' ':
-      direction = 0;
-      speed = 0;
-      autonomous = false;
-      break;
+        direction -= 8;
+        break;
 
-      case 'm':
-      autonomous = !autonomous;
-      if(autonomous)
-      {
-        //Serial1.print("auto ON\r\n");
-        direction = 0;
-        speed = 160;
-      }        
-      else
-      {
-        //Serial1.print("auto OFF\r\n");
+      case ' ':
         direction = 0;
         speed = 0;
-      }
-      break;
+        autonomous = false;
+        break;
+
+      case 'm':
+        autonomous = !autonomous;
+        if (autonomous)
+        {
+          //Serial1.print("auto ON\r\n");
+          direction = 0;
+          speed = 160;
+        }
+        else
+        {
+          //Serial1.print("auto OFF\r\n");
+          direction = 0;
+          speed = 0;
+        }
+        break;
 
       case '0':
       case '1':
@@ -248,17 +256,17 @@ void loop()
       case '7':
       case '8':
       case '9':
-      str.concat(zeichen);
-      break;
-      
+        str.concat(zeichen);
+        break;
+
       case '\n':
       case '\r':
-       speed = str.toInt();
-       str = "";
-       break;
-      
+        speed = str.toInt();
+        str = "";
+        break;
+
       default:
-      break;
+        break;
     }
 
     // limit speed to +/- 255
@@ -266,7 +274,7 @@ void loop()
     {
       speed = 255;
     }
-    
+
     if (speed < -255)
     {
       speed = -255;
@@ -277,12 +285,12 @@ void loop()
     {
       direction = 255;
     }
-    
+
     if (direction < -255)
     {
       direction = -255;
     }
-    
+
     //Serial1.print("Speed: ");
     //Serial1.print(speed);
     //Serial1.print("\r\n");
@@ -297,7 +305,7 @@ void loop()
   if (speed >= 0)
   {
     digitalWrite(DIR_A, LOW);
-  } 
+  }
   else
   {
     digitalWrite(DIR_A, HIGH);
@@ -307,7 +315,7 @@ void loop()
   if (direction >= 0)
   {
     digitalWrite(DIR_B, LOW);
-  } 
+  }
   else
   {
     digitalWrite(DIR_B, HIGH);
@@ -315,6 +323,6 @@ void loop()
   analogWrite(PWM_B, abs(direction));
 
   // limit the loop rate to not "overload" the sensors
-  delay(60);     
+  delay(60);
 }
 
