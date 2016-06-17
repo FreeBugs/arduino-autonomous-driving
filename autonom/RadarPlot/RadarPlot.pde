@@ -52,10 +52,10 @@ void draw()
 
   directionWidget.setValue(direction);
 
-  //drawDistances (random(300), random(300), random(300));
-  drawDistances (distLeft, distCenter, distRight);
+  drawDistances (random(300), random(300), random(300));
+  //drawDistances (distLeft, distCenter, distRight);
 
-  delay(10);
+  delay(50);
 };
 
 void drawDistances(float left, float center, float right)
@@ -64,14 +64,14 @@ void drawDistances(float left, float center, float right)
 
   rect(100, 100, 100+widgetSize, widgetSize);
 
-  plotRadar(100, 100, left, -10);
+  plotRadar(100, 100, left, -30, #0000FF);
 
-  plotRadar(110, 100, center, 0);
+  plotRadar(110, 100, center, 0, #00FF00);
 
-  plotRadar(120, 100, right, 10);
+  plotRadar(120, 100, right, 30, #FF0000);
 };
 
-void plotRadar(int topx, int topy, float radarDistance_cm, float angle_deg)
+void plotRadar(int topx, int topy, float radarDistance_cm, float angle_deg, int cl )
 {
 
 
@@ -79,7 +79,7 @@ void plotRadar(int topx, int topy, float radarDistance_cm, float angle_deg)
 
   // image(img, topx, topy, widgetSize, widgetSize);
 
-  fill(#00FF00, 220);
+  fill(cl, 150);
 
   // precise measurement up to 8 feet = 243 cm
   // 1.05 * widgetSize is the 8 ' area
