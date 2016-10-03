@@ -20,6 +20,8 @@ float distRight = 0.0;
 color colRight = #00FF00;
 float distCenter = 0.0;
 color colCenter = #0000FF;
+float speed = 0.0;
+float direction = 0.0;
 
 void setup () {
   // set the window size:
@@ -32,7 +34,7 @@ void setup () {
   // I know that the first port in the serial list on my mac
   // is always my  Arduino, so I open Serial.list()[0].
   // Open whatever port is the one you're using.
-  myPort = new Serial(this, Serial.list()[0], 9600);
+  myPort = new Serial(this, Serial.list()[4], 9600);
 
   // don't generate a serialEvent() unless you get a newline character:
   myPort.bufferUntil('\n');
@@ -96,6 +98,14 @@ void serialEvent (Serial myPort) {
       distCenter = float(list[1]);
       break;
       
+      case "S":
+      speed = float(list[1]);
+      break;
+      
+      case "D":
+      direction = float(list[1]);
+      break;
+      
       default:
       // just ignore it
       break;
@@ -104,6 +114,8 @@ void serialEvent (Serial myPort) {
     println("left   ", distLeft);
     println("right  ", distRight);
     println("center ", distCenter);
+    println("speed  ", speed);
+    println("direction ", direction);
 
     //inByte = map(inByte, 0, 100, 0, height);
   }

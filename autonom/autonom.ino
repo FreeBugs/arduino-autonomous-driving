@@ -112,6 +112,7 @@ typedef enum state
 // global variables
 int speed = 0;
 int direction = 0;
+int lastDirection = 0;
 bool autonomous = false;
 String str;
 state_t driving_state = stopped;
@@ -164,25 +165,40 @@ void loop()
       int dmin = min(distanceLeft, min(distanceRight, distanceCenter));
 
       // the closer the minimum distance is, the slower we drive
-      int vFwd = 255 - ((LIM_DISTANCE_HI - dmin) * 2);
+      int vFwd = 255 - ((LIM_DISTANCE_HI - dmin) );
 
-      // the close we are to an obstacle, the faster we rotate
-      int vRot = 255 - vFwd;
+      // the closer we are to an obstacle, the faster we rotate
+      int vRot = 255 ;
+      /*- vFwd;
       if (vRot)
       {
-        vRot = max(vRot, 128);
-      }
+        vRot = max(vRot, 180);
+      }*/
 
       // find the rotation direction
       int dir  = distanceLeft - distanceRight;
       if (dir < 0) dir = -1; else dir = 1;
       speed = vFwd;
+
       direction = vRot * dir;
-    }
+     
+      if ((abs(distanceRight - distanceLeft) > 3) ) // && (abs(direction - lastDirection) > 50)
+      {
+        lastDirection = direction;
+      }
+      else
+      {
+        direction = lastDirection;
+      };
+     
+    if (LIM_DISTANCE_LO < dmin) direction = 0;
+     
+    } // end of authonomous mode
     else
     {
       driving_state = stopped;
     };
+
 
 
     Serial1.print("S ");

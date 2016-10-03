@@ -50,12 +50,14 @@ void draw()
   if (direction > 0) directionWidget.setColorForeground(color(255, 255, 0)); 
   else directionWidget.setColorForeground(color(255, 0, 0));
 
-  directionWidget.setValue(direction);
+  directionWidget.setValue(direction * (-1));
 
-  drawDistances (random(300), random(300), random(300));
-  //drawDistances (distLeft, distCenter, distRight);
+ //drawDistances (random(300), random(300), random(300));
+  drawDistances (distLeft, distCenter, distRight);
 
   delay(50);
+  
+  
 };
 
 void drawDistances(float left, float center, float right)
@@ -69,6 +71,8 @@ void drawDistances(float left, float center, float right)
   plotRadar(110, 100, center, 0, #00FF00);
 
   plotRadar(120, 100, right, 30, #FF0000);
+  
+  
 };
 
 void plotRadar(int topx, int topy, float radarDistance_cm, float angle_deg, int cl )
@@ -138,3 +142,8 @@ void serialEvent (Serial myPort) {
     //inByte = map(inByte, 0, 100, 0, height);
   }
 }
+
+void keyPressed() {
+  
+ myPort.write(key);
+  }
